@@ -149,6 +149,15 @@ happy_end = [
     "祝你们生八个。"
 ]
 
+bye_msg = [
+    "行吧~",
+    "行吧，没良心的家伙。",
+    "好吧，无情的家伙。",
+    "好吧，祝你幸福。",
+    "好吧，如你所愿。",
+    "嗯。",
+    "好。"
+]
 
 @waifu.handle()
 async def _(bot: Bot, event: GroupMessageEvent):
@@ -172,7 +181,7 @@ async def _(bot: Bot, event: GroupMessageEvent):
                     await waifu.send("恭喜你娶到了群友" + MessageSegment.at(at), at_sender=True)
                     await asyncio.sleep(1)
                 elif HE < X <= BE:
-                    record_waifu[group_id][user_id] = user_id
+                    pass  # record_waifu[group_id][user_id] = user_id
                 else:
                     pass
             else:
@@ -225,7 +234,7 @@ async def _(bot: Bot, event: GroupMessageEvent):
                     at_sender=True
                 )
             else:
-                record_waifu[group_id][user_id] = user_id
+                pass  # record_waifu[group_id][user_id] = user_id
 
     if record_waifu[group_id].get(user_id, 0) == 0:
         member_list = await bot.get_group_member_list(group_id=event.group_id)
@@ -307,12 +316,15 @@ async def _(bot: Bot, event: GroupMessageEvent):
         A = event.user_id
         B = int(record_waifu[event.group_id][event.user_id])
         del record_waifu[event.group_id][A]
-        del record_waifu[event.group_id][B]
+        if A != B:
+            del record_waifu[event.group_id][B]
         save(record_waifu_file, record_waifu)
-        if random.randint(1, 2) == 1:
-            await bye.finish(random.choice(("嗯。", "...", "好。")))
-        else:
+        msg_len = len(bye_msg)
+        rand_idx = random.randint(0, msg_len)
+        if rand_idx == msg_len:
             await bye.finish(Message(f'[CQ:poke,qq={event.user_id}]'))
+        else:
+            await bye.finish(bye_msg[rand_idx])
     else:
         flag[1] += 1
         if flag[1] == 1:
@@ -329,7 +341,7 @@ async def _(bot: Bot, event: GroupMessageEvent):
 
 
 # 强制离婚
-force_bye = on_command("强制离婚", aliases={"强制分手","管理分手"}, permission=SUPERUSER, priority=90, block=True)
+force_bye = on_command("强制离婚", aliases={"强制分手", "管理分手"}, permission=SUPERUSER, priority=90, block=True)
 
 
 @force_bye.handle()
@@ -342,9 +354,11 @@ async def force_bye_hand(event: GroupMessageEvent):
     A = at
     B = int(record_waifu[event.group_id][at])
     del record_waifu[event.group_id][A]
-    del record_waifu[event.group_id][B]
+    if A != B:
+        del record_waifu[event.group_id][B]
     save(record_waifu_file, record_waifu)
     await force_bye.finish("离婚操作完成。")
+
 
 # 清除cd
 clear_cd = on_command("清除离婚cd", aliases={"清除分手cd"}, permission=SUPERUSER, priority=90, block=True)
@@ -361,6 +375,7 @@ async def clear_cd_hand(event: GroupMessageEvent):
     flag = cd_bye[event.group_id].setdefault(at, [0, 0])
     flag[0] = time.time()
     await clear_cd.finish("清除分手cd完成")
+
 
 # 查看娶群友卡池
 
