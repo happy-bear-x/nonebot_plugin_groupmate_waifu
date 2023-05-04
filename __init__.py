@@ -159,6 +159,7 @@ bye_msg = [
     "好。"
 ]
 
+
 @waifu.handle()
 async def _(bot: Bot, event: GroupMessageEvent):
     group_id = event.group_id
@@ -307,24 +308,29 @@ bye = on_command("离婚", aliases={"分手"}, permission=FACTOR, priority=90, b
 @bye.handle()
 async def _(bot: Bot, event: GroupMessageEvent):
     global record_waifu_file, record_waifu, cd_bye
+    user_id = event.user_id
+    if user_id not in record_waifu.keys():
+        await bye.finish("单身狗干啥呢？", at_sender=True)
+        return
     cd_bye.setdefault(event.group_id, {})
-    flag = cd_bye[event.group_id].setdefault(event.user_id, [0, 0])
+    flag = cd_bye[event.group_id].setdefault(user_id, [0, 0])
     Now = time.time()
     cd = flag[0] - Now
     if cd <= 0:
-        cd_bye[event.group_id][event.user_id][0] = Now + waifu_cd_bye
-        A = event.user_id
-        B = int(record_waifu[event.group_id][event.user_id])
-        del record_waifu[event.group_id][A]
-        if A != B:
-            del record_waifu[event.group_id][B]
+        cd_bye[event.group_id][user_id][0] = Now + waifu_cd_bye
+        wife = int(record_waifu[event.group_id][event.user_id])
+        del record_waifu[event.group_id][user_id]
+        if user_id != wife:
+            del record_waifu[event.group_id][wife]
+        else:
+            await force_bye.send("恭喜脱离注孤生")
         save(record_waifu_file, record_waifu)
         msg_len = len(bye_msg)
         rand_idx = random.randint(0, msg_len)
         if rand_idx == msg_len:
             await bye.finish(Message(f'[CQ:poke,qq={event.user_id}]'))
         else:
-            await bye.finish(bye_msg[rand_idx])
+            await bye.finish(bye_msg[rand_idx], at_sender=True)
     else:
         flag[1] += 1
         if flag[1] == 1:
@@ -356,6 +362,8 @@ async def force_bye_hand(event: GroupMessageEvent):
     del record_waifu[event.group_id][A]
     if A != B:
         del record_waifu[event.group_id][B]
+    else:
+        await force_bye.send("帮助脱离注孤生")
     save(record_waifu_file, record_waifu)
     await force_bye.finish("离婚操作完成。")
 
@@ -374,6 +382,7 @@ async def clear_cd_hand(event: GroupMessageEvent):
         at = at_arr[0]
     flag = cd_bye[event.group_id].setdefault(at, [0, 0])
     flag[0] = time.time()
+    flag[1] = 0
     await clear_cd.finish("清除分手cd完成")
 
 
