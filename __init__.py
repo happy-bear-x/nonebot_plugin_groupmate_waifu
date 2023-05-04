@@ -1,4 +1,4 @@
-from nonebot import require
+from nonebot import require, logger
 from nonebot.permission import SUPERUSER
 from nonebot.plugin.on import on_command
 from nonebot.adapters.onebot.v11 import (
@@ -149,16 +149,6 @@ happy_end = [
     "祝你们生八个。"
 ]
 
-bye_msg = [
-    "行吧~",
-    "行吧，没良心的家伙。",
-    "好吧，无情的家伙。",
-    "好吧，祝你幸福。",
-    "好吧，如你所愿。",
-    "嗯。",
-    "好。"
-]
-
 
 @waifu.handle()
 async def _(bot: Bot, event: GroupMessageEvent):
@@ -293,23 +283,27 @@ async def _(bot: Bot, event: GroupMessageEvent):
 
 # 分手
 
-async def FACTOR(bot: Bot, event: GroupMessageEvent) -> bool:
-    global record_waifu
-    record_waifu.setdefault(event.group_id, {})
-    return record_waifu[event.group_id].get(event.user_id, 0) not in (0, 1, event.user_id) and waifu_cd_bye != -1
-
-
 global cd_bye
 cd_bye = {}
 
-bye = on_command("离婚", aliases={"分手"}, permission=FACTOR, priority=90, block=True)
+bye = on_command("离婚", aliases={"分手"}, permission=GROUP, priority=90, block=True)
 
+bye_msg = [
+    "行吧~",
+    "行吧，没良心的家伙。",
+    "好吧，无情的家伙。",
+    "好吧，祝你幸福。",
+    "好吧，如你所愿。",
+    "嗯。",
+    "好。"
+]
 
 @bye.handle()
 async def _(bot: Bot, event: GroupMessageEvent):
     global record_waifu_file, record_waifu, cd_bye
     user_id = event.user_id
     group_id = event.group_id
+    record_waifu.setdefault(event.group_id, {})
     if user_id not in record_waifu[group_id].keys():
         await bye.finish("单身狗干啥呢？", at_sender=True)
         return
