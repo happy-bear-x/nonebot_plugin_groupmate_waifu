@@ -309,21 +309,24 @@ bye = on_command("离婚", aliases={"分手"}, permission=FACTOR, priority=90, b
 async def _(bot: Bot, event: GroupMessageEvent):
     global record_waifu_file, record_waifu, cd_bye
     user_id = event.user_id
-    if user_id not in record_waifu.keys():
+    group_id = event.group_id
+    if user_id not in record_waifu[group_id].keys():
         await bye.finish("单身狗干啥呢？", at_sender=True)
         return
-    cd_bye.setdefault(event.group_id, {})
-    flag = cd_bye[event.group_id].setdefault(user_id, [0, 0])
+    wife = int(record_waifu[group_id][user_id])
+    if user_id == wife:
+        await bye.finish("恭喜从注孤生出列", at_sender=True)
+        del record_waifu[group_id][user_id]
+        save(record_waifu_file, record_waifu)
+        return
+    cd_bye.setdefault(group_id, {})
+    flag = cd_bye[group_id].setdefault(user_id, [0, 0])
     Now = time.time()
     cd = flag[0] - Now
     if cd <= 0:
-        cd_bye[event.group_id][user_id][0] = Now + waifu_cd_bye
-        wife = int(record_waifu[event.group_id][event.user_id])
-        del record_waifu[event.group_id][user_id]
-        if user_id != wife:
-            del record_waifu[event.group_id][wife]
-        else:
-            await force_bye.send("恭喜脱离注孤生")
+        cd_bye[group_id][user_id][0] = Now + waifu_cd_bye
+        del record_waifu[group_id][user_id]
+        del record_waifu[group_id][wife]
         save(record_waifu_file, record_waifu)
         msg_len = len(bye_msg)
         rand_idx = random.randint(0, msg_len)
