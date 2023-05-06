@@ -477,7 +477,7 @@ async def _(bot: Bot, event: GroupMessageEvent):
     record_be.setdefault(group_id, {})
     group_dict = record_be[group_id]
     if group_dict:
-        sorted_dict_list = sorted(group_dict.items(), key=lambda item: item[1])
+        sorted_dict_list = sorted(group_dict.items(), key=lambda item: item[1], reverse=True)
         msg = ""
         for idx in range(len(sorted_dict_list)):
             # user_cnt : [qq , count]
