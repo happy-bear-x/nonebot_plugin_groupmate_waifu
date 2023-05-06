@@ -50,8 +50,16 @@ if not waifu_file.exists():
     os.makedirs(waifu_file)
 
 record_waifu_file = waifu_file / "record_waifu"
+record_be_file = waifu_file / "record_be"
 record_yinpa1_file = waifu_file / "record_yinpa1"
 record_yinpa2_file = waifu_file / "record_yinpa2"
+
+# 分手记录
+record_be = {}
+if record_be_file.exists():
+    with open(record_be_file, 'r') as f:
+        line = f.read()
+        record_be = eval(line)
 
 if waifu_save:
     def save(file, data):
@@ -298,13 +306,15 @@ bye_msg = [
     "好。"
 ]
 
+
 @bye.handle()
 async def _(bot: Bot, event: GroupMessageEvent):
     global record_waifu_file, record_waifu, cd_bye
     user_id = event.user_id
     group_id = event.group_id
-    record_waifu.setdefault(event.group_id, {})
-    if user_id not in record_waifu[group_id].keys():
+    record_waifu.setdefault(group_id, {})
+    group_wife = record_waifu[group_id]
+    if user_id not in group_wife.keys():
         await bye.finish("单身狗干啥呢？", at_sender=True)
         return
     wife = int(record_waifu[group_id][user_id])
@@ -319,9 +329,14 @@ async def _(bot: Bot, event: GroupMessageEvent):
     cd = flag[0] - Now
     if cd <= 0:
         cd_bye[group_id][user_id][0] = Now + waifu_cd_bye
-        del record_waifu[group_id][user_id]
-        del record_waifu[group_id][wife]
+        cd_bye[group_id][user_id][1] = 0
+        del group_wife[user_id]
+        del group_wife[wife]
         save(record_waifu_file, record_waifu)
+        # 记录分手次数
+        group_be = record_be.setdefault(group_id, {})
+        group_be[user_id] = group_be.setdefault(user_id, 0) + 1
+        save(record_be_file, record_be)
         msg_len = len(bye_msg)
         rand_idx = random.randint(0, msg_len)
         if rand_idx == msg_len:
@@ -449,6 +464,35 @@ async def _(bot: Bot, event: GroupMessageEvent):
             await cp_list.finish(MessageSegment.image(output))
 
     await cp_list.finish("本群暂无cp哦~")
+
+
+# 分手榜单（渣榜）
+
+be_list = on_command("分手榜单", aliases={"离婚榜单"}, permission=GROUP, priority=90, block=True)
+
+
+@be_list.handle()
+async def _(bot: Bot, event: GroupMessageEvent):
+    group_id = event.group_id
+    record_be.setdefault(group_id, {})
+    group_dict = record_be[group_id]
+    if group_dict:
+        sorted_dict_list = sorted(group_dict.items(), key=lambda item: item[1])
+        msg = ""
+        for idx in range(len(sorted_dict_list)):
+            # user_cnt : [qq , count]
+            user_cnt = sorted_dict_list[idx]
+            try:
+                member = await bot.get_group_member_info(group_id=group_id, user_id=user_cnt[0])
+                nickname = member['card'] or member['nickname']
+            except:
+                nickname = ""
+            msg += f"NO·{idx+1}：{nickname}\n"
+        if msg:
+            output = text_to_png("分手榜单：\n——————————————\n" + msg[:-1])
+            await be_list.finish(MessageSegment.image(output))
+
+    await be_list.finish("本群暂无分手记录~")
 
 
 # 透群友
